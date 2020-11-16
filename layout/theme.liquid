@@ -1,0 +1,218 @@
+<!doctype html>
+
+<html class="no-js" lang="{{ request.locale.iso_code }}">
+  <head>
+    <meta charset="utf-8">
+    {% comment %} <meta name="viewport" content="width=device-width, initial-scale=1.0, height=device-height, minimum-scale=1.0, maximum-scale=1.0"> {% endcomment %}
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, minimum-scale=1">
+    <meta name="theme-color" content="{{ settings.accent_color }}">
+
+    {%- capture seo_page_title -%}
+      {%- if request.page_type == 'search' and search.terms != blank -%}
+        {{ search.terms | split: ' AND ' | last }} - {{ shop.name }}
+      {%- else -%}
+        {{ page_title }}{% if current_tags %}{% assign meta_tags = current_tags | join: ', ' %} &ndash; {{ 'general.meta.tags' | t: tags: meta_tags }}{% endif %}{% if current_page != 1 %} &ndash; {{ 'general.meta.page' | t: page: current_page }}{% endif %}
+      {%- endif -%}
+    {%- endcapture -%}
+
+    <title>{{- seo_page_title -}}</title>
+
+    {%- if page_description -%}
+      <meta name="description" content="{{ page_description | escape }}">
+    {%- endif -%}
+
+    <link rel="canonical" href="{{ canonical_url }}">
+
+    {%- if settings.favicon -%}
+      <link rel="shortcut icon" href="{{ settings.favicon | img_url: '96x96' }}" type="image/png">
+    {%- endif -%}
+
+    {%- comment -%}Few prefech to increase performance on commonly used third-parties{%- endcomment -%}
+    <link rel="preload" as="style" href="{{ 'theme.css' | asset_url }}">
+    <link rel="preconnect" href="https://cdn.shopify.com">
+    <link rel="preconnect" href="https://fonts.shopifycdn.com">
+    <link rel="dns-prefetch" href="https://productreviews.shopifycdn.com">
+    <link rel="dns-prefetch" href="https://ajax.googleapis.com">
+    <link rel="dns-prefetch" href="https://maps.googleapis.com">
+    <link rel="dns-prefetch" href="https://maps.gstatic.com">
+
+    {% render 'social-meta-tags' %}
+    {% render 'css-variables' %}
+
+    {{ content_for_header }}
+
+    <link rel="stylesheet" href="{{ 'theme.css' | asset_url }}">
+    <link rel="stylesheet" href="{{ 'custom.css' | asset_url }}">
+
+    {% render 'microdata-schema' %}
+
+    <script>
+      // This allows to expose several variables to the global scope, to be used in scripts
+      window.theme = {
+        pageType: {{ request.page_type | json }},
+        cartCount: {{ cart.item_count | json }},
+        moneyFormat: {{ shop.money_format | json }},
+        moneyWithCurrencyFormat: {{ shop.money_with_currency_format | json }},
+        showDiscount: {% if settings.show_discount %}true{% else %}false{% endif %},
+        discountMode: {{ settings.discount_mode | json }},
+        searchMode: {{ settings.search_mode | json }},
+        cartType: {{ settings.cart_type | json }}
+      };
+
+      window.routes = {
+        rootUrl: {{ routes.root_url | json }},
+        cartUrl: {{ routes.cart_url | json }},
+        cartAddUrl: {{ routes.cart_add_url | json }},
+        cartChangeUrl: {{ routes.cart_change_url | json }},
+        searchUrl: {{ routes.search_url | json }},
+        productRecommendationsUrl: {{ routes.product_recommendations_url | json }}
+      };
+
+      window.languages = {
+        collectionOnSaleLabel: {{ 'collection.product.discount_html' | t | json }},
+        productFormUnavailable: {{ 'product.form.unavailable' | t | json }},
+        productFormAddToCart: {% if product.template_suffix == 'pre-order' %}{{ 'product.form.pre_order' | t | json }}{% else %}{{ 'product.form.add_to_cart' | t | json }}{% endif %},
+        productFormSoldOut: {{ 'product.form.sold_out' | t | json }},
+        shippingEstimatorNoResults: {{ 'cart.shipping_estimator.no_results_title' | t | json }},
+        shippingEstimatorOneResult: {{ 'cart.shipping_estimator.one_result_title' | t | json }},
+        shippingEstimatorMultipleResults: {{ 'cart.shipping_estimator.multiple_results_title' | t | json }},
+        shippingEstimatorErrors: {{ 'cart.shipping_estimator.errors' | t | json }}
+      };
+
+      window.lazySizesConfig = {
+        loadHidden: false,
+        hFac: 0.8,
+        expFactor: 3,
+        customMedia: {
+          '--phone': '(max-width: 640px)',
+          '--tablet': '(min-width: 641px) and (max-width: 1023px)',
+          '--lap': '(min-width: 1024px)'
+        }
+      };
+
+      document.documentElement.className = document.documentElement.className.replace('no-js', 'js');
+    </script>
+
+    {%- if request.page_type == 'customers/addresses' -%}
+      <script src="{{ 'shopify_common.js' | shopify_asset_url }}" defer></script>
+      <script src="{{ 'customer_area.js' | shopify_asset_url }}" defer></script>
+    {%- endif -%}
+
+    <script src="//cdn.polyfill.io/v3/polyfill.min.js?unknown=polyfill&features=fetch,Element.prototype.closest,Element.prototype.matches,Element.prototype.remove,Element.prototype.classList,Array.prototype.includes,Array.prototype.fill,String.prototype.includes,String.prototype.padStart,Object.assign,CustomEvent,Intl,URL,DOMTokenList,IntersectionObserver,IntersectionObserverEntry" defer></script>
+    <script src="{{ 'theme.js' | asset_url }}" defer></script>
+    <script src="{{ 'custom.js' | asset_url }}" defer></script>
+
+    {%- if request.page_type != 'cart' -%}
+      <script>
+        (function () {
+          window.onpageshow = function() {
+            // We force re-freshing the cart content onpageshow, as most browsers will serve a cache copy when hitting the
+            // back button, which cause staled data
+            document.documentElement.dispatchEvent(new CustomEvent('cart:refresh', {
+              bubbles: true,
+              detail: {scrollToTop: false}
+            }));
+          };
+        })();
+      </script>
+    {%- endif -%}
+  
+    
+
+    <!--begin-bc-sf-filter-css-->
+      {% include 'bc-sf-filter-style' %}
+    <!--end-bc-sf-filter-css-->
+  
+  {% render 'shogun-head' %}
+ 
+{% render 'pagefly-header' %}
+ {% include 'advanced-registration-init' %}</head> 
+  <body class="warehouse--v1 {% if settings.animation_image_zoom %}features--animate-zoom{% endif%} template-{{ request.page_type | handle }} {% if request.page_type contains '/' %}template-{{ request.page_type | split: '/' | last | handle }}{% endif %} loading" data-instant-intensity="viewport">
+    <span class="loading-bar"></span>
+
+    {% section 'announcement-bar' %}
+
+    {%- unless request.page_type == 'cart' -%}
+      {%- comment -%}As required by Shopify rules, popup must be removed on cart page to remove distraction{%- endcomment -%}
+      {% section 'popups' %}
+    {%- endunless -%}
+
+    {% section 'header' %}
+
+    <main id="main" role="main">
+      {{ content_for_layout }}{% include 'customer-account-form' %}
+    </main>
+
+    {%- if request.page_type == 'blog' or request.page_type == 'article' or request.page_type == 'page' -%}
+      {% section 'static-newsletter' %}
+    {%- endif -%}
+
+    <div class="svg-defs">
+      <svg class="svg-defs" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="30" height="32" viewBox="0 0 30 32">
+        <clipPath id="star">  
+        <path d="M29.7,11c0,0.3-0.2,0.5-0.5,0.9l-6.5,6.3l1.5,8.9c0,0.1,0,0.2,0,0.4c0,0.2-0.1,0.5-0.2,0.6c-0.1,0.2-0.3,0.3-0.5,0.3
+          c-0.2,0-0.5-0.1-0.7-0.2l-8-4.2l-8,4.2c-0.3,0.1-0.5,0.2-0.7,0.2c-0.3,0-0.4-0.1-0.6-0.3c-0.1-0.2-0.2-0.4-0.2-0.6
+          c0-0.1,0-0.2,0-0.4l1.5-8.9l-6.5-6.3C0.1,11.5,0,11.2,0,11c0-0.4,0.3-0.7,1-0.8l9-1.3l4-8.1C14.2,0.2,14.5,0,14.9,0s0.6,0.2,0.9,0.7
+          l4,8.1l9,1.3C29.4,10.3,29.7,10.5,29.7,11z"/>
+        <path d="M64.7,11c0,0.3-0.2,0.5-0.5,0.9l-6.5,6.3l1.5,8.9c0,0.1,0,0.2,0,0.4c0,0.2-0.1,0.5-0.2,0.6s-0.3,0.3-0.5,0.3
+          c-0.2,0-0.5-0.1-0.7-0.2l-8-4.2l-8,4.2c-0.3,0.1-0.5,0.2-0.7,0.2c-0.2,0-0.4-0.1-0.6-0.3c-0.1-0.2-0.2-0.4-0.2-0.6
+          c0-0.1,0-0.2,0-0.4l1.5-8.9l-6.5-6.3C35.1,11.5,35,11.2,35,11c0-0.4,0.3-0.7,1-0.8l9-1.3l4-8.1C49.2,0.2,49.5,0,49.9,0
+          s0.6,0.2,0.9,0.7l4,8.1l9,1.3C64.4,10.3,64.7,10.5,64.7,11z"/>
+        <path d="M99.7,11c0,0.3-0.2,0.5-0.5,0.9l-6.5,6.3l1.5,8.9c0,0.1,0,0.2,0,0.4c0,0.2-0.1,0.5-0.2,0.6c-0.1,0.2-0.3,0.3-0.5,0.3
+          c-0.2,0-0.5-0.1-0.7-0.2l-8-4.2l-8,4.2c-0.3,0.1-0.5,0.2-0.7,0.2c-0.2,0-0.4-0.1-0.6-0.3c-0.1-0.2-0.2-0.4-0.2-0.6
+          c0-0.1,0-0.2,0-0.4l1.5-8.9l-6.5-6.3C70.1,11.5,70,11.2,70,11c0-0.4,0.3-0.7,1-0.8l9-1.3l4-8.1C84.2,0.2,84.5,0,84.9,0
+          c0.4,0,0.6,0.2,0.9,0.7l4,8.1l9,1.3C99.4,10.3,99.7,10.5,99.7,11z"/>
+        <path d="M134.7,11c0,0.3-0.2,0.5-0.5,0.9l-6.5,6.3l1.5,8.9c0,0.1,0,0.2,0,0.4c0,0.2-0.1,0.5-0.2,0.6s-0.3,0.3-0.5,0.3
+          c-0.2,0-0.5-0.1-0.7-0.2l-8-4.2l-8,4.2c-0.3,0.1-0.5,0.2-0.7,0.2c-0.2,0-0.4-0.1-0.6-0.3c-0.1-0.2-0.2-0.4-0.2-0.6
+          c0-0.1,0-0.2,0-0.4l1.5-8.9l-6.5-6.3c-0.3-0.3-0.4-0.6-0.4-0.9c0-0.4,0.3-0.7,1-0.8l9-1.3l4-8.1c0.2-0.5,0.5-0.7,0.9-0.7
+          c0.4,0,0.6,0.2,0.9,0.7l4,8.1l9,1.3C134.4,10.3,134.7,10.5,134.7,11z"/>
+        <path d="M169.7,11c0,0.3-0.2,0.5-0.5,0.9l-6.5,6.3l1.5,8.9c0,0.1,0,0.2,0,0.4c0,0.2-0.1,0.5-0.2,0.6s-0.3,0.3-0.5,0.3
+          c-0.2,0-0.5-0.1-0.7-0.2l-8-4.2l-8,4.2c-0.3,0.1-0.5,0.2-0.7,0.2c-0.2,0-0.4-0.1-0.6-0.3s-0.2-0.4-0.2-0.6c0-0.1,0-0.2,0-0.4
+          l1.5-8.9l-6.5-6.3c-0.3-0.3-0.4-0.6-0.4-0.9c0-0.4,0.3-0.7,1-0.8l9-1.3l4-8.1c0.2-0.5,0.5-0.7,0.9-0.7s0.6,0.2,0.9,0.7l4,8.1l9,1.3
+          C169.4,10.3,169.7,10.5,169.7,11z"/>
+        </clipPath>
+        <clipPath id="star-empty">
+        <path d="M20.3,17.4l5.5-5.3l-7.5-1.1l-3.4-6.8l-3.4,6.8l-7.5,1.1l5.5,5.3l-1.3,7.5l6.8-3.6l6.7,3.6L20.3,17.4z M29.7,11
+          c0,0.3-0.2,0.5-0.5,0.9l-6.5,6.3l1.5,8.9c0,0.1,0,0.2,0,0.4c0,0.6-0.2,0.9-0.7,0.9c-0.2,0-0.5-0.1-0.7-0.2l-8-4.2l-8,4.2
+          c-0.3,0.1-0.5,0.2-0.7,0.2c-0.3,0-0.4-0.1-0.6-0.3c-0.1-0.2-0.2-0.4-0.2-0.6c0-0.1,0-0.2,0-0.4l1.5-8.9l-6.5-6.3
+          C0.1,11.5,0,11.2,0,11c0-0.4,0.3-0.7,1-0.8l9-1.3l4-8.1C14.2,0.2,14.5,0,14.9,0s0.6,0.2,0.9,0.7l4,8.1l9,1.3
+          C29.4,10.3,29.7,10.5,29.7,11L29.7,11z"/>
+        <path d="M55.3,17.4l5.5-5.3l-7.5-1.1l-3.4-6.8l-3.4,6.8l-7.5,1.1l5.5,5.3l-1.3,7.5l6.8-3.6l6.7,3.6L55.3,17.4z M64.7,11
+          c0,0.3-0.2,0.5-0.5,0.9l-6.5,6.3l1.5,8.9c0,0.1,0,0.2,0,0.4c0,0.6-0.2,0.9-0.7,0.9c-0.2,0-0.5-0.1-0.7-0.2l-8-4.2l-8,4.2
+          c-0.3,0.1-0.5,0.2-0.7,0.2c-0.2,0-0.4-0.1-0.6-0.3c-0.1-0.2-0.2-0.4-0.2-0.6c0-0.1,0-0.2,0-0.4l1.5-8.9l-6.5-6.3
+          C35.1,11.5,35,11.2,35,11c0-0.4,0.3-0.7,1-0.8l9-1.3l4-8.1C49.2,0.2,49.5,0,49.9,0s0.6,0.2,0.9,0.7l4,8.1l9,1.3
+          C64.4,10.3,64.7,10.5,64.7,11L64.7,11z"/>
+        <path d="M90.3,17.4l5.5-5.3l-7.5-1.1l-3.4-6.8l-3.4,6.8l-7.5,1.1l5.5,5.3l-1.3,7.5l6.8-3.6l6.7,3.6L90.3,17.4z M99.7,11
+          c0,0.3-0.2,0.5-0.5,0.9l-6.5,6.3l1.5,8.9c0,0.1,0,0.2,0,0.4c0,0.6-0.2,0.9-0.7,0.9c-0.2,0-0.5-0.1-0.7-0.2l-8-4.2l-8,4.2
+          c-0.3,0.1-0.5,0.2-0.7,0.2c-0.2,0-0.4-0.1-0.6-0.3c-0.1-0.2-0.2-0.4-0.2-0.6c0-0.1,0-0.2,0-0.4l1.5-8.9l-6.5-6.3
+          C70.1,11.5,70,11.2,70,11c0-0.4,0.3-0.7,1-0.8l9-1.3l4-8.1C84.2,0.2,84.5,0,84.9,0c0.4,0,0.6,0.2,0.9,0.7l4,8.1l9,1.3
+          C99.4,10.3,99.7,10.5,99.7,11L99.7,11z"/>
+        <path d="M125.3,17.4l5.5-5.3l-7.5-1.1l-3.4-6.8l-3.4,6.8l-7.5,1.1l5.5,5.3l-1.3,7.5l6.8-3.6l6.7,3.6L125.3,17.4z M134.7,11
+          c0,0.3-0.2,0.5-0.5,0.9l-6.5,6.3l1.5,8.9c0,0.1,0,0.2,0,0.4c0,0.6-0.2,0.9-0.7,0.9c-0.2,0-0.5-0.1-0.7-0.2l-8-4.2l-8,4.2
+          c-0.3,0.1-0.5,0.2-0.7,0.2c-0.2,0-0.4-0.1-0.6-0.3c-0.1-0.2-0.2-0.4-0.2-0.6c0-0.1,0-0.2,0-0.4l1.5-8.9l-6.5-6.3
+          c-0.3-0.3-0.4-0.6-0.4-0.9c0-0.4,0.3-0.7,1-0.8l9-1.3l4-8.1c0.2-0.5,0.5-0.7,0.9-0.7c0.4,0,0.6,0.2,0.9,0.7l4,8.1l9,1.3
+          C134.4,10.3,134.7,10.5,134.7,11L134.7,11z"/>
+        <path d="M160.3,17.4l5.5-5.3l-7.5-1.1l-3.4-6.8l-3.4,6.8l-7.5,1.1l5.5,5.3l-1.3,7.5l6.8-3.6l6.7,3.6L160.3,17.4z M169.7,11
+          c0,0.3-0.2,0.5-0.5,0.9l-6.5,6.3l1.5,8.9c0,0.1,0,0.2,0,0.4c0,0.6-0.2,0.9-0.7,0.9c-0.2,0-0.5-0.1-0.7-0.2l-8-4.2l-8,4.2
+          c-0.3,0.1-0.5,0.2-0.7,0.2c-0.2,0-0.4-0.1-0.6-0.3c-0.1-0.2-0.2-0.4-0.2-0.6c0-0.1,0-0.2,0-0.4l1.5-8.9l-6.5-6.3
+          c-0.3-0.3-0.4-0.6-0.4-0.9c0-0.4,0.3-0.7,1-0.8l9-1.3l4-8.1c0.2-0.5,0.5-0.7,0.9-0.7c0.4,0,0.6,0.2,0.9,0.7l4,8.1l9,1.3
+          C169.4,10.3,169.7,10.5,169.7,11L169.7,11z"/>
+        </clipPath>
+        <rect id="rating" width="120" height="30" clip-path="url(#star)"/>
+      </svg>
+    </div>
+
+    {% unless template contains 'cart' or template contains 'checkout' %}
+      {% section 'newsletter' %}
+    {% endunless %}
+    {% section 'text-with-icons-1' %}
+    {% section 'footer' %}
+    {% include 'mw_PO_objects' %}
+    
+    {% if template != 'collection.bundle' %}
+      <!--begin-bc-sf-filter-js-->
+        {% include 'bc-sf-filter' %}
+      <!--end-bc-sf-filter-js-->
+    {% endif %}
+  </body>
+</html>
